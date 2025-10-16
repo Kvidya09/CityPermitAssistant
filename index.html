@@ -29,6 +29,21 @@
   /* Improve focus outlines for keyboard users */
   :focus-visible { outline: 3px solid #2563eb; outline-offset: 2px; border-radius: 6px; }
 </style>
+  <style>
+  /* Ensure correct stacking order */
+  #mobileActions { z-index: 40; }
+  #chatWin       { z-index: 60; } /* above the sticky bar */
+  #chatLauncher  { z-index: 70; } /* above everything else */
+
+  /* Keep launcher clear of the sticky bar on mobile */
+  @media (max-width: 768px) {
+    body { padding-bottom: 80px; }
+    #chatLauncher { bottom: 80px !important; }
+  }
+
+  /* Make dragging feel native on touch */
+  #chatHeader { touch-action: none; }
+</style>
 </head>
 <body class="min-h-screen bg-gray-50 text-gray-900">
   <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-white focus:text-blue-700 focus:px-3 focus:py-2 focus:rounded">
@@ -848,9 +863,127 @@
   }, { passive: true });
 })();
 </script>
+  <script>
+(function fixChatOverlapAndDrag(){
+  var chatWin = document.getElementById('chatWin');
+  var chatHeader = document.getElementById('chatHeader');
+  var chatLauncher = document.getElementById('chatLauncher');
+  var sticky = document.getElementById('mobileActions');
+
+  if (!chatWin || !chatHeader || !chatLauncher) return;
+
+  // --- Helpers ---
+  function stickyOffset() {
+    var pad = 16; // spacing above bar
+    if (!sticky) return 24; // desktop/default
+    var h = sticky.offsetHeight || 64;
+    // Only apply on mobile sizes
+    return window.matchMedia('(max-width: 768px)').matches ? (h + pad) : 24;
+  }
+  function liftChat() {
+    // Anchor above sticky bar and to right edge
+    chatWin.style.bottom = stickyOffset() + 'px';
+    chatWin.style.right  = '24px';
+    chatWin.style.left   = 'auto';
+    chatWin.style.top    = 'auto';
+  }
+
+  // Keep chat window above bar on open + on resize/orientation
+  chatLauncher.addEventListener('click', function(){
+    // show window (your code already handles this), then lift
+    setTimeout(liftChat, 0);
+    // avoid launcher covering the chat window
+    chatLauncher.style.opacity = '0';
+    chatLauncher.style.pointerEvents = 'none';
+  }, { passive: true });
+
+  // When chat closes via the "x" button, restore launcher
+  document.addEventListener('click', function(e){
+    var closeBtn = e.target.closest ? e.target.closest('[data-close="#chatWin"]') : null;
+    if (closeBtn) {
+      // small delay to allow your close handler to run
+      setTimeout(function(){
+        chatLauncher.style.opacity = '';
+        chatLauncher.style.pointerEvents = '';
+      }, 0);
+    }
+  });
+
+  window.addEventListener('resize', liftChat, { passive: true });
+  window.addEventListener('orientationchange', liftChat, { passive: true });
+  // Initial placement in case chat starts open
+  liftChat();
+
+  // --- Touch-friendly dragging (prevents page scroll) ---
+  var dragging = false, startX=0, startY=0, startLeft=0, startTop=0;
+
+  function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+
+  chatHeader.addEventListener('pointerdown', function(e){
+    // ignore if clicking the close button inside header
+    if (e.target.closest && e.target.closest('[data-close="#chatWin"]')) return;
+
+    dragging = true;
+    try { chatHeader.setPointerCapture(e.pointerId); } catch(_) {}
+    chatWin.classList.add('dragging');
+
+    var rect = chatWin.getBoundingClientRect();
+    startLeft = rect.left;
+    startTop  = rect.top;
+    startX = e.clientX;
+    startY = e.clientY;
+
+    // Prevent the page from scrolling when we start dragging
+    e.preventDefault();
+    // Reduce rubber-banding/scroll while dragging
+    document.documentElement.style.overscrollBehavior = 'none';
+    document.body.style.overflow = 'hidden';
+  });
+
+  window.addEventListener('pointermove', function(e){
+    if (!dragging) return;
+    e.preventDefault(); // keep the page from scrolling
+
+    var dx = e.clientX - startX;
+    var dy = e.clientY - startY;
+
+    var newLeft = startLeft + dx;
+    var newTop  = startTop  + dy;
+
+    // Keep the chat within the viewport bounds
+    var maxLeft = window.innerWidth  - chatWin.offsetWidth  - 8;
+    var maxTop  = window.innerHeight - chatWin.offsetHeight - 8;
+    newLeft = clamp(newLeft, 8, Math.max(8, maxLeft));
+    newTop  = clamp(newTop,  8, Math.max(8, maxTop));
+
+    chatWin.style.left = newLeft + 'px';
+    chatWin.style.top  = newTop  + 'px';
+    chatWin.style.right = 'auto';
+    chatWin.style.bottom = 'auto';
+  }, { passive: false });
+
+  window.addEventListener('pointerup', function(e){
+    if (!dragging) return;
+    dragging = false;
+    try { chatHeader.releasePointerCapture(e.pointerId); } catch(_) {}
+    chatWin.classList.remove('dragging');
+
+    // Re-enable page scroll
+    document.documentElement.style.overscrollBehavior = '';
+    document.body.style.overflow = '';
+
+    // If the window ended up behind the sticky bar, lift it again
+    var rect = chatWin.getBoundingClientRect();
+    var barH = (sticky && window.matchMedia('(max-width: 768px)').matches) ? (sticky.offsetHeight || 64) : 0;
+    if (rect.bottom > window.innerHeight - barH) liftChat();
+  }, { passive: false });
+})();
+</script>
+
 </body>
   
 </html>
+
 
 
 
