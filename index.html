@@ -608,8 +608,19 @@
       document.addEventListener('click', function(e){ var btn=e.target.closest? e.target.closest('[data-close="#chatWin"]') : null; if(btn){ chatWin.classList.add('hidden'); }});
       chatLauncher.addEventListener('click', function(){ chatWin.classList.remove('hidden'); });
       (function(){ var dragging=false, startX=0, startY=0, startLeft=0, startTop=0; function onPointerDown(e){ if(e.target.closest&&e.target.closest('[data-close="#chatWin"]')) return; dragging=true; chatHeader.setPointerCapture(e.pointerId); chatWin.classList.add('dragging'); var rect=chatWin.getBoundingClientRect(); startLeft=rect.left; startTop=rect.top; startX=e.clientX; startY=e.clientY; } function onPointerMove(e){ if(!dragging) return; var dx=e.clientX-startX; var dy=e.clientY-startY; var newLeft=Math.max(8, Math.min(window.innerWidth-chatWin.offsetWidth-8, startLeft+dx)); var newTop=Math.max(8, Math.min(window.innerHeight-chatWin.offsetHeight-8, startTop+dy)); chatWin.style.left=newLeft+'px'; chatWin.style.top=newTop+'px'; chatWin.style.right='auto'; chatWin.style.bottom='auto'; } function onPointerUp(e){ dragging=false; try{ chatHeader.releasePointerCapture(e.pointerId);}catch(err){} chatWin.classList.remove('dragging'); } chatHeader.addEventListener('pointerdown', onPointerDown); window.addEventListener('pointermove', onPointerMove); window.addEventListener('pointerup', onPointerUp); })();
-      chatForm.addEventListener('submit', function(e){ e.preventDefault(); var msgVal=(chatInput&&chatInput.value)? chatInput.value.trim():''; if(!msgVal) return; var bubble=document.createElement('div'); bubble.className='ml-auto max-w-[80%] bg-blue-600 text-white px-3 py-2 rounded-xl'; bubble.textContent=msgVal; chatLog.appendChild(bubble); chatInput.value=''; var typing=document.createElement('div'); typing.className='text-gray-500 text-sm'; typing.textContent='Assistant is typing...'; chatLog.appendChild(typing); chatLog.scrollTop=chatLog.scrollHeight; setTimeout(function(){ typing.remove(); var ans=document.createElement('div'); ans.className='mr-auto max-w-[80%] bg-gray-100 px-3 py-2 rounded-xl'; ans.textContent='Thanks! In this mockup, responses are simulated. Connect your backend to go live.'; chatLog.appendChild(ans); chatLog.scrollTop=chatLog.scrollHeight; }, 700); });
-    })();
+      chatForm.addEventListener('submit', function(e){ e.preventDefault(); var msgVal=(chatInput&&chatInput.value)? chatInput.value.trim():''; if(!msgVal) return; var bubble=document.createElement('div'); bubble.className='ml-auto max-w-[80%] bg-blue-600 text-white px-3 py-2 rounded-xl'; bubble.textContent=msgVal; chatLog.appendChild(bubble); chatInput.value='';   // send to Worker instead of faking a reply
+  var ws = window.__WS__;
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(msgVal);
+  } else {
+    // show a small notice if disconnected
+    var warn = document.createElement('div');
+    warn.className = 'mr-auto text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1';
+    warn.textContent = 'Reconnecting… your message was not sent.';
+    chatLog.appendChild(warn);
+  }
+  chatLog.scrollTop = chatLog.scrollHeight;
+     });
 
     // 9) "Submit your question" -> fake email wiring
     (function(){ var submitModal=document.getElementById('submitModal'); var cancelSubmit=document.getElementById('cancelSubmit'); var closeBtn=submitModal.querySelector('[aria-label="Close"]'); var form=document.getElementById('submitForm'); var msg=document.getElementById('submitMsg'); if(cancelSubmit) cancelSubmit.addEventListener('click', function(){ closeDialog(submitModal); }); if(closeBtn) closeBtn.addEventListener('click', function(){ closeDialog(submitModal); }); form.addEventListener('submit', function(e){ e.preventDefault(); var data={ topic:document.getElementById('topic').value, permitType:document.getElementById('permitType').value, question:document.getElementById('question').value, email:document.getElementById('email').value }; console.log('Simulated email send to abccity@city.gov', data); if(msg) msg.classList.remove('hidden'); setTimeout(function(){ closeDialog(submitModal); alert('Form submitted successfully! (sent to abccity@city.gov - simulation)'); form.reset(); if(msg) msg.classList.add('hidden'); }, 800); }); })();
@@ -979,10 +990,52 @@
   }, { passive: false });
 })();
 </script>
+<script>
+(function connectWSOnce(){
+  if (window.__WS_WIRED__) return;
+  window.__WS_WIRED__ = true;
+
+  var WS_URL = "wss://permit-realtime.kantamneni-v.workers.dev/ws";
+  var ws, reconnectTimer;
+
+  function appendInbound(text){
+    var chatLog = document.getElementById('chatLog');
+    if (!chatLog) return;
+    var ans = document.createElement('div');
+    ans.className = 'mr-auto max-w-[80%] bg-gray-100 px-3 py-2 rounded-xl';
+    ans.textContent = text;
+    chatLog.appendChild(ans);
+    chatLog.scrollTop = chatLog.scrollHeight;
+  }
+
+  function connect(){
+    try { ws = new WebSocket(WS_URL); } catch (e) { console.warn('WS create failed', e); return; }
+
+    ws.onopen = function(){ console.log('[WS] open'); };
+    ws.onclose = function(){ console.warn('[WS] closed'); clearTimeout(reconnectTimer); reconnectTimer = setTimeout(connect, 1500); };
+    ws.onerror = function(ev){ console.warn('[WS] error', ev); };
+    ws.onmessage = function(evt){
+      try {
+        var data = JSON.parse(evt.data);
+        if (data && data.type === 'chat' && typeof data.text === 'string') {
+          appendInbound(data.text);
+        }
+      } catch (e) { console.warn('WS parse', e); }
+    };
+
+    // expose for the submit handler
+    window.__WS__ = ws;
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', connect);
+  else connect();
+})();
+</script>
 
 </body>
   
 </html>
+
 
 
 
