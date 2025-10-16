@@ -1,36 +1,11 @@
 <!doctype html>
 <html lang="en">
 <head>
-  
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>City-Wide Permitting Assistant - Full Working Mockup (Stabilized)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-
-<script>
-(function lucideAutoRender(){
-  function renderIcons(){
-    if (window.lucide && typeof window.lucide.createIcons === 'function') {
-      window.lucide.createIcons();
-    }
-  }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', renderIcons);
-  } else {
-    renderIcons();
-  }
-  window.refreshIcons = renderIcons;
-  new MutationObserver(function(muts){
-    for (const m of muts) {
-      if (m.addedNodes && m.addedNodes.length) { renderIcons(); break; }
-    }
-  }).observe(document.documentElement, { childList: true, subtree: true });
-})();
-</script>
-
   <meta name="color-scheme" content="light only">
   <style>
     .badge{font-size:10px;text-transform:uppercase;letter-spacing:.06em;background:#FEF3C7;color:#92400E;padding:2px 6px;border-radius:6px}
@@ -69,10 +44,7 @@
   /* Make dragging feel native on touch */
   #chatHeader { touch-action: none; }
 </style>
-
 </head>
- 
-
 <body class="min-h-screen bg-gray-50 text-gray-900">
   <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-white focus:text-blue-700 focus:px-3 focus:py-2 focus:rounded">
   Skip to main content
@@ -610,8 +582,8 @@
 
     // 6) Inline reply toggles & submission
     (function(){
-      Array.prototype.forEach.call(document.querySelectorAll('[data-inline-reply]'), function(btn){ if(btn._wired) return; btn._wired=true; btn.addEventListener('click', function(){ var card=btn.closest('article'); var form=card.querySelector('.inline-reply'); form.classList.toggle('hidden'); if(!form.classList.contains('hidden')){ var ta=form.querySelector('textarea'); if(ta) ta.focus(); card.scrollIntoView({behavior:'smooth', block:'center'});if (window.refreshIcons) window.refreshIcons();} }); });
-      Array.prototype.forEach.call(document.querySelectorAll('.inline-reply'), function(form){ if(form._wired) return; form._wired=true; form.addEventListener('submit', function(e){ e.preventDefault(); var ta=form.querySelector('textarea'); var val=(ta&&ta.value?ta.value.trim():''); if(!val) return; var card=form.closest('article'); var container=card.querySelector('.comments'); if(!container){ container=document.createElement('div'); container.className='comments mt-3 space-y-2'; form.before(container); } container.appendChild(makeCommentEl(val)); if(window.lucide&&typeof window.lucide.createIcons==='function'){ window.lucide.createIcons(); }if (window.refreshIcons) window.refreshIcons(); if(ta) ta.value=''; form.classList.add('hidden'); }); var cancelBtn=form.querySelector('[data-inline-cancel]'); if(cancelBtn) cancelBtn.addEventListener('click', function(){ form.classList.add('hidden'); }); });
+      Array.prototype.forEach.call(document.querySelectorAll('[data-inline-reply]'), function(btn){ if(btn._wired) return; btn._wired=true; btn.addEventListener('click', function(){ var card=btn.closest('article'); var form=card.querySelector('.inline-reply'); form.classList.toggle('hidden'); if(!form.classList.contains('hidden')){ var ta=form.querySelector('textarea'); if(ta) ta.focus(); card.scrollIntoView({behavior:'smooth', block:'center'}); } }); });
+      Array.prototype.forEach.call(document.querySelectorAll('.inline-reply'), function(form){ if(form._wired) return; form._wired=true; form.addEventListener('submit', function(e){ e.preventDefault(); var ta=form.querySelector('textarea'); var val=(ta&&ta.value?ta.value.trim():''); if(!val) return; var card=form.closest('article'); var container=card.querySelector('.comments'); if(!container){ container=document.createElement('div'); container.className='comments mt-3 space-y-2'; form.before(container); } container.appendChild(makeCommentEl(val)); if(window.lucide&&typeof window.lucide.createIcons==='function'){ window.lucide.createIcons(); } if(ta) ta.value=''; form.classList.add('hidden'); }); var cancelBtn=form.querySelector('[data-inline-cancel]'); if(cancelBtn) cancelBtn.addEventListener('click', function(){ form.classList.add('hidden'); }); });
     })();
 
     // 7) Global safety delegation for delete (covers dynamically added comments)
@@ -636,19 +608,7 @@
       document.addEventListener('click', function(e){ var btn=e.target.closest? e.target.closest('[data-close="#chatWin"]') : null; if(btn){ chatWin.classList.add('hidden'); }});
       chatLauncher.addEventListener('click', function(){ chatWin.classList.remove('hidden'); });
       (function(){ var dragging=false, startX=0, startY=0, startLeft=0, startTop=0; function onPointerDown(e){ if(e.target.closest&&e.target.closest('[data-close="#chatWin"]')) return; dragging=true; chatHeader.setPointerCapture(e.pointerId); chatWin.classList.add('dragging'); var rect=chatWin.getBoundingClientRect(); startLeft=rect.left; startTop=rect.top; startX=e.clientX; startY=e.clientY; } function onPointerMove(e){ if(!dragging) return; var dx=e.clientX-startX; var dy=e.clientY-startY; var newLeft=Math.max(8, Math.min(window.innerWidth-chatWin.offsetWidth-8, startLeft+dx)); var newTop=Math.max(8, Math.min(window.innerHeight-chatWin.offsetHeight-8, startTop+dy)); chatWin.style.left=newLeft+'px'; chatWin.style.top=newTop+'px'; chatWin.style.right='auto'; chatWin.style.bottom='auto'; } function onPointerUp(e){ dragging=false; try{ chatHeader.releasePointerCapture(e.pointerId);}catch(err){} chatWin.classList.remove('dragging'); } chatHeader.addEventListener('pointerdown', onPointerDown); window.addEventListener('pointermove', onPointerMove); window.addEventListener('pointerup', onPointerUp); })();
-      chatForm.addEventListener('submit', function(e){ e.preventDefault(); var msgVal=(chatInput&&chatInput.value)? chatInput.value.trim():''; if(!msgVal) return; var bubble=document.createElement('div'); bubble.className='ml-auto max-w-[80%] bg-blue-600 text-white px-3 py-2 rounded-xl'; bubble.textContent=msgVal; chatLog.appendChild(bubble); chatInput.value='';   // send to Worker instead of faking a reply
-  var ws = window.__WS__;
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(msgVal);
-  } else {
-    // show a small notice if disconnected
-    var warn = document.createElement('div');
-    warn.className = 'mr-auto text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1';
-    warn.textContent = 'Reconnecting… your message was not sent.';
-    chatLog.appendChild(warn);
-  }
-  chatLog.scrollTop = chatLog.scrollHeight;
-     });
+      chatForm.addEventListener('submit', function(e){ e.preventDefault(); var msgVal=(chatInput&&chatInput.value)? chatInput.value.trim():''; if(!msgVal) return; var bubble=document.createElement('div'); bubble.className='ml-auto max-w-[80%] bg-blue-600 text-white px-3 py-2 rounded-xl'; bubble.textContent=msgVal; chatLog.appendChild(bubble); chatInput.value=''; var typing=document.createElement('div'); typing.className='text-gray-500 text-sm'; typing.textContent='Assistant is typing...'; chatLog.appendChild(typing); chatLog.scrollTop=chatLog.scrollHeight; setTimeout(function(){ typing.remove(); var ans=document.createElement('div'); ans.className='mr-auto max-w-[80%] bg-gray-100 px-3 py-2 rounded-xl'; ans.textContent='Thanks! In this mockup, responses are simulated. Connect your backend to go live.'; chatLog.appendChild(ans); chatLog.scrollTop=chatLog.scrollHeight; }, 700); });
     })();
 
     // 9) "Submit your question" -> fake email wiring
@@ -1019,74 +979,10 @@
   }, { passive: false });
 })();
 </script>
-<script>
-(function connectWSOnce(){
-  if (window.__WS_WIRED__) return;
-  window.__WS_WIRED__ = true;
-
-  var WS_URL = "wss://permit-realtime.kantamneni-v.workers.dev/ws";
-  var ws, reconnectTimer;
-
-  function statusLine(text, cls){
-    var chatLog = document.getElementById('chatLog'); if (!chatLog) return;
-    var line = document.createElement('div');
-    line.className = 'mr-auto text-xs ' + (cls || 'text-gray-500');
-    line.textContent = text;
-    chatLog.appendChild(line);
-    chatLog.scrollTop = chatLog.scrollHeight;
-  }
-
-  function appendInbound(text){
-    var chatLog = document.getElementById('chatLog');
-    if (!chatLog) return;
-    var ans = document.createElement('div');
-    ans.className = 'mr-auto max-w-[80%] bg-gray-100 px-3 py-2 rounded-xl';
-    ans.textContent = text;
-    chatLog.appendChild(ans);
-    chatLog.scrollTop = chatLog.scrollHeight;
-    if (window.refreshIcons) window.refreshIcons();
-  }
-
-  function connect(){
-    try { ws = new WebSocket(WS_URL); } catch (e) { console.warn('WS create failed', e); return; }
-
-    ws.onopen = function(){
-      statusLine('Connected to City Assistant ✓','text-emerald-600');
-    };
-    ws.onclose = function(){
-      statusLine('Disconnected. Reconnecting…','text-amber-600');
-      clearTimeout(reconnectTimer);
-      reconnectTimer = setTimeout(connect, 1500);
-    };
-    ws.onerror = function(ev){
-      console.warn('[WS] error', ev);
-    };
-    ws.onmessage = function(evt){
-      try {
-        var data = JSON.parse(evt.data);
-        if (data && data.type === 'chat' && typeof data.text === 'string') {
-          appendInbound(data.text);
-        }
-      } catch (e) { console.warn('WS parse', e); }
-    };
-
-    window.__WS__ = ws; // used by your chatForm submit handler
-  }
-
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', connect);
-  else connect();
-})();
-</script>
 
 </body>
   
 </html>
-
-
-
-
-
-
 
 
 
