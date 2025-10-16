@@ -1,13 +1,36 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-
+  
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>City-Wide Permitting Assistant - Full Working Mockup (Stabilized)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+
+<script>
+(function lucideAutoRender(){
+  function renderIcons(){
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      window.lucide.createIcons();
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderIcons);
+  } else {
+    renderIcons();
+  }
+  window.refreshIcons = renderIcons;
+  new MutationObserver(function(muts){
+    for (const m of muts) {
+      if (m.addedNodes && m.addedNodes.length) { renderIcons(); break; }
+    }
+  }).observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
+
   <meta name="color-scheme" content="light only">
   <style>
     .badge{font-size:10px;text-transform:uppercase;letter-spacing:.06em;background:#FEF3C7;color:#92400E;padding:2px 6px;border-radius:6px}
@@ -626,6 +649,7 @@
   }
   chatLog.scrollTop = chatLog.scrollHeight;
      });
+    })();
 
     // 9) "Submit your question" -> fake email wiring
     (function(){ var submitModal=document.getElementById('submitModal'); var cancelSubmit=document.getElementById('cancelSubmit'); var closeBtn=submitModal.querySelector('[aria-label="Close"]'); var form=document.getElementById('submitForm'); var msg=document.getElementById('submitMsg'); if(cancelSubmit) cancelSubmit.addEventListener('click', function(){ closeDialog(submitModal); }); if(closeBtn) closeBtn.addEventListener('click', function(){ closeDialog(submitModal); }); form.addEventListener('submit', function(e){ e.preventDefault(); var data={ topic:document.getElementById('topic').value, permitType:document.getElementById('permitType').value, question:document.getElementById('question').value, email:document.getElementById('email').value }; console.log('Simulated email send to abccity@city.gov', data); if(msg) msg.classList.remove('hidden'); setTimeout(function(){ closeDialog(submitModal); alert('Form submitted successfully! (sent to abccity@city.gov - simulation)'); form.reset(); if(msg) msg.classList.add('hidden'); }, 800); }); })();
@@ -1003,6 +1027,15 @@
   var WS_URL = "wss://permit-realtime.kantamneni-v.workers.dev/ws";
   var ws, reconnectTimer;
 
+  function statusLine(text, cls){
+    var chatLog = document.getElementById('chatLog'); if (!chatLog) return;
+    var line = document.createElement('div');
+    line.className = 'mr-auto text-xs ' + (cls || 'text-gray-500');
+    line.textContent = text;
+    chatLog.appendChild(line);
+    chatLog.scrollTop = chatLog.scrollHeight;
+  }
+
   function appendInbound(text){
     var chatLog = document.getElementById('chatLog');
     if (!chatLog) return;
@@ -1017,9 +1050,17 @@
   function connect(){
     try { ws = new WebSocket(WS_URL); } catch (e) { console.warn('WS create failed', e); return; }
 
-    ws.onopen = function(){ console.log('[WS] open'); };
-    ws.onclose = function(){ console.warn('[WS] closed'); clearTimeout(reconnectTimer); reconnectTimer = setTimeout(connect, 1500); };
-    ws.onerror = function(ev){ console.warn('[WS] error', ev); };
+    ws.onopen = function(){
+      statusLine('Connected to City Assistant ✓','text-emerald-600');
+    };
+    ws.onclose = function(){
+      statusLine('Disconnected. Reconnecting…','text-amber-600');
+      clearTimeout(reconnectTimer);
+      reconnectTimer = setTimeout(connect, 1500);
+    };
+    ws.onerror = function(ev){
+      console.warn('[WS] error', ev);
+    };
     ws.onmessage = function(evt){
       try {
         var data = JSON.parse(evt.data);
@@ -1029,8 +1070,7 @@
       } catch (e) { console.warn('WS parse', e); }
     };
 
-    // expose for the submit handler
-    window.__WS__ = ws;
+    window.__WS__ = ws; // used by your chatForm submit handler
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', connect);
@@ -1041,6 +1081,7 @@
 </body>
   
 </html>
+
 
 
 
