@@ -47,31 +47,6 @@
   #chatHeader { touch-action: none; }
 </style>
 
-   <script>
-(function lucideAutoRender(){
-  function renderIcons(){
-    if (window.lucide && typeof window.lucide.createIcons === 'function') {
-      window.lucide.createIcons();
-    }
-  }
-  // initial render
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', renderIcons);
-  } else {
-    renderIcons();
-  }
-  // expose for manual calls
-  window.refreshIcons = renderIcons;
-
-  // re-render whenever nodes are added (e.g., after appending replies)
-  const mo = new MutationObserver(function(muts){
-    for (const m of muts) {
-      if (m.addedNodes && m.addedNodes.length) { renderIcons(); break; }
-    }
-  });
-  mo.observe(document.documentElement, { childList: true, subtree: true });
-})();
-</script>
 </head>
  
 
@@ -1066,6 +1041,7 @@
 </body>
   
 </html>
+
 
 
 
