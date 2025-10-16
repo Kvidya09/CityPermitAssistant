@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="en">
 <head>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>City-Wide Permitting Assistant - Full Working Mockup (Stabilized)</title>
@@ -45,6 +47,32 @@
   #chatHeader { touch-action: none; }
 </style>
 </head>
+  <script>
+(function lucideAutoRender(){
+  function renderIcons(){
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      window.lucide.createIcons();
+    }
+  }
+  // initial render
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderIcons);
+  } else {
+    renderIcons();
+  }
+  // expose for manual calls
+  window.refreshIcons = renderIcons;
+
+  // re-render whenever nodes are added (e.g., after appending replies)
+  const mo = new MutationObserver(function(muts){
+    for (const m of muts) {
+      if (m.addedNodes && m.addedNodes.length) { renderIcons(); break; }
+    }
+  });
+  mo.observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
+
 <body class="min-h-screen bg-gray-50 text-gray-900">
   <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-white focus:text-blue-700 focus:px-3 focus:py-2 focus:rounded">
   Skip to main content
@@ -582,8 +610,8 @@
 
     // 6) Inline reply toggles & submission
     (function(){
-      Array.prototype.forEach.call(document.querySelectorAll('[data-inline-reply]'), function(btn){ if(btn._wired) return; btn._wired=true; btn.addEventListener('click', function(){ var card=btn.closest('article'); var form=card.querySelector('.inline-reply'); form.classList.toggle('hidden'); if(!form.classList.contains('hidden')){ var ta=form.querySelector('textarea'); if(ta) ta.focus(); card.scrollIntoView({behavior:'smooth', block:'center'}); } }); });
-      Array.prototype.forEach.call(document.querySelectorAll('.inline-reply'), function(form){ if(form._wired) return; form._wired=true; form.addEventListener('submit', function(e){ e.preventDefault(); var ta=form.querySelector('textarea'); var val=(ta&&ta.value?ta.value.trim():''); if(!val) return; var card=form.closest('article'); var container=card.querySelector('.comments'); if(!container){ container=document.createElement('div'); container.className='comments mt-3 space-y-2'; form.before(container); } container.appendChild(makeCommentEl(val)); if(window.lucide&&typeof window.lucide.createIcons==='function'){ window.lucide.createIcons(); } if(ta) ta.value=''; form.classList.add('hidden'); }); var cancelBtn=form.querySelector('[data-inline-cancel]'); if(cancelBtn) cancelBtn.addEventListener('click', function(){ form.classList.add('hidden'); }); });
+      Array.prototype.forEach.call(document.querySelectorAll('[data-inline-reply]'), function(btn){ if(btn._wired) return; btn._wired=true; btn.addEventListener('click', function(){ var card=btn.closest('article'); var form=card.querySelector('.inline-reply'); form.classList.toggle('hidden'); if(!form.classList.contains('hidden')){ var ta=form.querySelector('textarea'); if(ta) ta.focus(); card.scrollIntoView({behavior:'smooth', block:'center'});if (window.refreshIcons) window.refreshIcons();} }); });
+      Array.prototype.forEach.call(document.querySelectorAll('.inline-reply'), function(form){ if(form._wired) return; form._wired=true; form.addEventListener('submit', function(e){ e.preventDefault(); var ta=form.querySelector('textarea'); var val=(ta&&ta.value?ta.value.trim():''); if(!val) return; var card=form.closest('article'); var container=card.querySelector('.comments'); if(!container){ container=document.createElement('div'); container.className='comments mt-3 space-y-2'; form.before(container); } container.appendChild(makeCommentEl(val)); if(window.lucide&&typeof window.lucide.createIcons==='function'){ window.lucide.createIcons(); }if (window.refreshIcons) window.refreshIcons(); if(ta) ta.value=''; form.classList.add('hidden'); }); var cancelBtn=form.querySelector('[data-inline-cancel]'); if(cancelBtn) cancelBtn.addEventListener('click', function(){ form.classList.add('hidden'); }); });
     })();
 
     // 7) Global safety delegation for delete (covers dynamically added comments)
@@ -620,7 +648,7 @@
     chatLog.appendChild(warn);
   }
   chatLog.scrollTop = chatLog.scrollHeight;
-     })();
+     });
 
     // 9) "Submit your question" -> fake email wiring
     (function(){ var submitModal=document.getElementById('submitModal'); var cancelSubmit=document.getElementById('cancelSubmit'); var closeBtn=submitModal.querySelector('[aria-label="Close"]'); var form=document.getElementById('submitForm'); var msg=document.getElementById('submitMsg'); if(cancelSubmit) cancelSubmit.addEventListener('click', function(){ closeDialog(submitModal); }); if(closeBtn) closeBtn.addEventListener('click', function(){ closeDialog(submitModal); }); form.addEventListener('submit', function(e){ e.preventDefault(); var data={ topic:document.getElementById('topic').value, permitType:document.getElementById('permitType').value, question:document.getElementById('question').value, email:document.getElementById('email').value }; console.log('Simulated email send to abccity@city.gov', data); if(msg) msg.classList.remove('hidden'); setTimeout(function(){ closeDialog(submitModal); alert('Form submitted successfully! (sent to abccity@city.gov - simulation)'); form.reset(); if(msg) msg.classList.add('hidden'); }, 800); }); })();
@@ -1006,6 +1034,7 @@
     ans.textContent = text;
     chatLog.appendChild(ans);
     chatLog.scrollTop = chatLog.scrollHeight;
+    if (window.refreshIcons) window.refreshIcons();
   }
 
   function connect(){
@@ -1035,6 +1064,7 @@
 </body>
   
 </html>
+
 
 
 
