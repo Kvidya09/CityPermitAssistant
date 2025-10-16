@@ -14,8 +14,26 @@
     .comment-bubble{background:#f3f4f6;border-radius:10px;padding:8px 10px}
     .dragging{cursor:grabbing}
   </style>
+  <style>
+  /* Extra breathing room for the mobile sticky bar */
+  @media (max-width: 768px) {
+    body { padding-bottom: 96px; }
+    #chatLauncher { bottom: 96px !important; } /* keep your floating button above the bar */
+  }
+
+  /* Tablet tweaks (optional, gentle) */
+  @media (min-width: 768px) and (max-width: 1024px) {
+    main { gap: 1.25rem; }
+  }
+
+  /* Improve focus outlines for keyboard users */
+  :focus-visible { outline: 3px solid #2563eb; outline-offset: 2px; border-radius: 6px; }
+</style>
 </head>
 <body class="min-h-screen bg-gray-50 text-gray-900">
+  <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-white focus:text-blue-700 focus:px-3 focus:py-2 focus:rounded">
+  Skip to main content
+</a>
   <!-- Header banner constrained to page width -->
   <header class="sticky top-0 z-30 bg-transparent">
     <div class="mx-auto max-w-7xl w-full px-4">
@@ -614,5 +632,115 @@
       } catch (e) { console.warn('Smoke tests error', e); }
     })();
   </script>
+  <div id="mobileActions" class="md:hidden fixed inset-x-0 bottom-0 z-40 bg-white/95 backdrop-blur border-t p-2">
+  <div class="grid grid-cols-4 gap-2">
+    <button type="button" class="w-full px-3 py-2 rounded-lg bg-blue-600 text-white" data-open="submitModal" aria-label="Submit a question">
+      Submit
+    </button>
+    <button type="button" class="w-full px-3 py-2 rounded-lg bg-blue-600 text-white" data-open="learnModal" aria-label="Start a discussion">
+      Discuss
+    </button>
+    <button type="button" class="w-full px-3 py-2 rounded-lg bg-blue-600 text-white" data-action="open-chat" aria-controls="chatWin" aria-expanded="false">
+      Chat
+    </button>
+    <button type="button" class="w-full px-3 py-2 rounded-lg bg-blue-600 text-white" data-open="promoteModal" aria-label="Promote your business">
+      Promote
+    </button>
+  </div>
+</div>
+
+<script>
+  (function enhanceA11yAndMobile(){
+    // 1) Landmarks & labels (non-destructive; only adds when present)
+    var header = document.querySelector('header'); if (header && !header.hasAttribute('role')) header.setAttribute('role','banner');
+    var main = document.querySelector('main'); if (main){ if (!main.id) main.id = 'main'; if (!main.hasAttribute('role')) main.setAttribute('role','main'); }
+    var sidebar = document.getElementById('sidebar'); if (sidebar){ sidebar.setAttribute('role','complementary'); if (!sidebar.getAttribute('aria-label')) sidebar.setAttribute('aria-label','Sidebar'); }
+    var primaryNav = document.querySelector('header nav'); if (primaryNav && !primaryNav.getAttribute('aria-label')) primaryNav.setAttribute('aria-label','Primary');
+
+    // 2) Chat log: announce new messages to assistive tech
+    var chatLog = document.getElementById('chatLog');
+    if (chatLog){
+      chatLog.setAttribute('role','log');
+      chatLog.setAttribute('aria-live','polite');
+      chatLog.setAttribute('aria-relevant','additions');
+      chatLog.setAttribute('tabindex','0');
+    }
+
+    // 3) Mark Lucide icons as decorative if present
+    function hideDecorativeIcons(){
+      try {
+        var icons = document.querySelectorAll('[data-lucide]');
+        icons.forEach(function(i){ i.setAttribute('aria-hidden','true'); i.setAttribute('focusable','false'); });
+      } catch(e){}
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', hideDecorativeIcons);
+    } else { hideDecorativeIcons(); }
+
+    // 4) Improve dialog focus behavior (return focus to opener)
+    var openers = document.querySelectorAll('[data-open]');
+    openers.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-open');
+        var dlg = document.getElementById(id);
+        if (!dlg) return;
+        dlg._returnFocus = btn;
+        if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open','');
+        var first = dlg.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (first) first.focus();
+      });
+    });
+    document.querySelectorAll('dialog button').forEach(function(b){
+      if (b.getAttribute('aria-label') === 'Close' || b.value === 'cancel') {
+        b.addEventListener('click', function(){
+          var dlg = b.closest('dialog'); if (!dlg) return;
+          if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open');
+          if (dlg._returnFocus && dlg._returnFocus.focus) dlg._returnFocus.focus();
+        });
+      }
+    });
+    document.querySelectorAll('dialog').forEach(function(dlg){
+      dlg.addEventListener('click', function(e){ if(e.target === dlg){ if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open'); if (dlg._returnFocus && dlg._returnFocus.focus) dlg._returnFocus.focus(); }});
+    });
+
+    // 5) Mobile sticky bar wiring — reuse your existing modals & chat
+    var chatBtn = document.querySelector('#mobileActions [data-action="open-chat"]');
+    var chatLauncher = document.getElementById('chatLauncher');
+    var chatWin = document.getElementById('chatWin');
+
+    if (chatBtn && chatLauncher){
+      chatBtn.addEventListener('click', function(){
+        // Prefer your existing launcher behavior for consistency
+        chatLauncher.click();
+        chatBtn.setAttribute('aria-expanded','true');
+        var input = document.getElementById('chatInput'); if (input) input.focus();
+      });
+    }
+
+    // Keep chatLauncher ARIA in sync when window is closed by the X button
+    document.addEventListener('click', function(e){
+      var closeBtn = e.target.closest ? e.target.closest('[data-close="#chatWin"]') : null;
+      if (closeBtn && chatBtn){
+        chatBtn.setAttribute('aria-expanded','false');
+        chatBtn.focus();
+      }
+    });
+
+    // 6) Mobile menu button: add ARIA if present
+    var menuBtn = document.getElementById('menuBtn');
+    if (menuBtn){
+      menuBtn.setAttribute('aria-controls','sidebar');
+      menuBtn.setAttribute('aria-expanded','false');
+      menuBtn.addEventListener('click', function(){
+        // Toggle expanded state based on sidebar visibility
+        var s = document.getElementById('sidebar');
+        var expanded = s ? !s.classList.contains('hidden') : false;
+        menuBtn.setAttribute('aria-expanded', String(expanded));
+      });
+    }
+  })();
+</script>
 </body>
+  
 </html>
+
