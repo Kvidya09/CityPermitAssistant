@@ -46,8 +46,8 @@
   /* Make dragging feel native on touch */
   #chatHeader { touch-action: none; }
 </style>
-</head>
-  <script>
+
+   <script>
 (function lucideAutoRender(){
   function renderIcons(){
     if (window.lucide && typeof window.lucide.createIcons === 'function') {
@@ -72,6 +72,8 @@
   mo.observe(document.documentElement, { childList: true, subtree: true });
 })();
 </script>
+</head>
+ 
 
 <body class="min-h-screen bg-gray-50 text-gray-900">
   <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-white focus:text-blue-700 focus:px-3 focus:py-2 focus:rounded">
@@ -1064,6 +1066,7 @@
 </body>
   
 </html>
+
 
 
 
