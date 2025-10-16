@@ -738,9 +738,120 @@
     }
   })();
 </script>
+  <script>
+(function positionChatAboveSticky(){
+  var chatWin = document.getElementById('chatWin');
+  var chatLauncher = document.getElementById('chatLauncher');
+
+  if (!chatWin || !chatLauncher) return;
+
+  // Always keep chat above sticky bar & other UI
+  chatWin.style.zIndex = '60'; // higher than sticky bar (typically 40/50)
+
+  function liftChatForMobile() {
+    var bar = document.getElementById('mobileActions');
+    var pad = 16; // extra breathing room
+    var bottom = 24; // default desktop bottom offset
+    if (window.matchMedia('(max-width: 768px)').matches && bar) {
+      bottom = (bar.offsetHeight || 80) + pad;
+    }
+    // Apply bottom offset and clear conflicting top/right defaults from dragging
+    chatWin.style.bottom = bottom + 'px';
+    chatWin.style.right = '24px';
+    chatWin.style.left = 'auto';
+    chatWin.style.top = 'auto';
+  }
+
+  // Lift on open (reuse your existing launcher)
+  chatLauncher.addEventListener('click', liftChatForMobile, { passive: true });
+  // Also lift on resize/orientation changes
+  window.addEventListener('resize', liftChatForMobile, { passive: true });
+  window.addEventListener('orientationchange', liftChatForMobile, { passive: true });
+
+  // Initial pass (in case chat starts open)
+  liftChatForMobile();
+})();
+</script>
+
+  <script>
+(function improveChatDragOnTouch(){
+  var chatWin = document.getElementById('chatWin');
+  var chatHeader = document.getElementById('chatHeader');
+  if (!chatWin || !chatHeader) return;
+
+  // Disable native panning on the drag handle so touchmove won't scroll the page
+  chatHeader.style.touchAction = 'none';
+
+  // Enhance your existing handlers by preventing default while dragging
+  var dragging = false, startX=0, startY=0, startLeft=0, startTop=0;
+
+  function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+
+  chatHeader.addEventListener('pointerdown', function(e){
+    // ignore clicks on the close button inside header
+    if (e.target.closest && e.target.closest('[data-close="#chatWin"]')) return;
+
+    dragging = true;
+    try { chatHeader.setPointerCapture(e.pointerId); } catch(_) {}
+    chatWin.classList.add('dragging');
+
+    var rect = chatWin.getBoundingClientRect();
+    startLeft = rect.left;
+    startTop  = rect.top;
+    startX = e.clientX;
+    startY = e.clientY;
+
+    // Prevent page scroll right from the start (important on mobile)
+    e.preventDefault();
+  });
+
+  window.addEventListener('pointermove', function(e){
+    if (!dragging) return;
+    e.preventDefault(); // stop page from scrolling while dragging
+
+    var dx = e.clientX - startX;
+    var dy = e.clientY - startY;
+
+    var newLeft = startLeft + dx;
+    var newTop  = startTop  + dy;
+
+    // Keep the chat window inside the viewport
+    var maxLeft = window.innerWidth  - chatWin.offsetWidth  - 8;
+    var maxTop  = window.innerHeight - chatWin.offsetHeight - 8;
+    newLeft = clamp(newLeft, 8, Math.max(8, maxLeft));
+    newTop  = clamp(newTop,  8, Math.max(8, maxTop));
+
+    chatWin.style.left = newLeft + 'px';
+    chatWin.style.top  = newTop  + 'px';
+    chatWin.style.right = 'auto';
+    chatWin.style.bottom = 'auto';
+  }, { passive: false });
+
+  window.addEventListener('pointerup', function(e){
+    if (!dragging) return;
+    dragging = false;
+    try { chatHeader.releasePointerCapture(e.pointerId); } catch(_) {}
+    chatWin.classList.remove('dragging');
+  });
+
+  // Optional: when opening chat, ensure it starts within the viewport
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest ? e.target.closest('#chatLauncher') : null;
+    if (!btn) return;
+    // Snap to a sane position if it somehow drifted off-screen
+    var rect = chatWin.getBoundingClientRect();
+    if (rect.bottom > window.innerHeight || rect.right > window.innerWidth) {
+      chatWin.style.left = 'auto';
+      chatWin.style.top = 'auto';
+      // bottom is adjusted by the other snippet based on sticky bar height
+    }
+  }, { passive: true });
+})();
+</script>
 </body>
   
 </html>
+
 
 
 
